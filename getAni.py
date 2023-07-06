@@ -1,9 +1,9 @@
-import json
 import re
 import requests
 import roman
 import sys
 from bs4 import BeautifulSoup as bs
+from ordered_set import OrderedSet
 from thefuzz import fuzz
 from urllib import parse
 
@@ -15,10 +15,10 @@ endNumExp = re.compile(r'[a-z0-9 ]+ ((?:(?:[0-9]+)$)|(?:(?=[MDCLXVI])M*(?:C[MD]|
 romajiExp = re.compile(r'([aeiou]|[bkstgzdnhpmr]{1,2}[aeiou]|(?:sh|ch|j|ts|f|y|w|k)(?:y[auo]|[aeiou])|n|\W|[0-9])+', re.IGNORECASE)
 
 class AnilistEntry:
-    def __init__(self, title: str) -> None:
+    def __init__(self, title: str):
         self.title = title
-        self.synonyms = []
-        self.seasons = []
+        self.synonyms = set()
+        self.seasons = OrderedSet()
     def __repr__(self) -> str:
         title = self.title.replace('"', '\\"')
         string = f'  - title: "{title}"\n'
@@ -128,7 +128,7 @@ def getAniData(url: str, getPrequel: bool = False) -> AnilistEntry:
             synTitle = syn.text.strip()
             # check fuzzy match or romaji (only ascii characters)
             if synTitle.isascii() and (fuzz.ratio(synTitle, engName) > matchPercentage or fuzz.ratio(synTitle, romajiName) > matchPercentage or romajiExp.fullmatch(synTitle)):
-                alEntry.synonyms.append(synTitle)
+                alEntry.synonyms.add(synTitle)
             
             # check for season number in synonyms
             search = seasonExp.search(synTitle)
@@ -147,9 +147,9 @@ def getAniData(url: str, getPrequel: bool = False) -> AnilistEntry:
     ## add Romaji as synonym
     ## check if different from English name
     if romajiName != engName:
-        alEntry.synonyms.append(romajiName)
+        alEntry.synonyms.add(romajiName)
 
-    alEntry.seasons.append((season, anilistId, endNum))
+    alEntry.seasons.add((season, anilistId, endNum))
 
     ## recursively find the prequels until the first season
     if getPrequel == True:
@@ -161,7 +161,7 @@ def getAniData(url: str, getPrequel: bool = False) -> AnilistEntry:
                 fullLink = 'https://anilist.co' + link
                 ## get prequel entry and append
                 newAlEntry = getAniData(url=fullLink, getPrequel=True) 
-                newAlEntry.seasons.extend(alEntry.seasons)
+                newAlEntry.seasons |= alEntry.seasons
 
                 return newAlEntry
             ## no prequels
@@ -173,3 +173,5 @@ def getAniData(url: str, getPrequel: bool = False) -> AnilistEntry:
 if __name__ == '__main__':
     url = input('Please input the url of the anilist page you are trying to get:\n')
     print(getAniData(url=url, getPrequel=True))
+
+## TODO: ADD START AT SUPPORT

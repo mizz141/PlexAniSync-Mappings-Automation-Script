@@ -102,5 +102,5 @@ if __name__ == '__main__':
     output += ''.join([str(a) for a in anilist])
     print(output)
     ## write to file
-    with open(f'yaml/{year}-{seasonNum}-{seasons[seasonNum]}-Anime.yaml', 'w', encoding='utf-8') as f:
+    with open(f'yamlFiles/{year}-{seasonNum}-{seasons[seasonNum]}-Anime.yaml', 'w', encoding='utf-8') as f:
         f.write(output)
